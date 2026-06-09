@@ -533,6 +533,74 @@ input[type=file]{display:none}
 /* ─── ANIMATIONS ─── */
 @keyframes slideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .anim-in{animation:slideIn 0.3s ease forwards}
+
+/* ─── SEARCH BAR ─── */
+.search-bar-wrap{margin-bottom:1.25rem;position:relative}
+.search-bar{
+  width:100%;padding:0.6rem 1rem;
+  border:1.5px solid var(--tape);border-radius:2px;
+  background:var(--paper);
+  font-family:'Patrick Hand',cursive;font-size:1rem;color:var(--ink);
+  outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+}
+.search-bar:focus{border-color:var(--faded);box-shadow:0 0 0 3px rgba(139,111,94,0.1)}
+.search-bar::placeholder{color:var(--muted)}
+
+/* friend search results dropdown */
+#friendSearchResults{
+  position:absolute;left:0;right:0;background:var(--paper);
+  border:1.5px solid var(--tape);border-top:none;border-radius:0 0 2px 2px;
+  z-index:100;max-height:200px;overflow-y:auto;
+}
+.fsr-row{
+  display:flex;align-items:center;gap:0.6rem;
+  padding:0.5rem 0.75rem;cursor:pointer;
+  border-bottom:1px dashed rgba(224,201,154,0.4);
+  font-family:'Patrick Hand',cursive;font-size:0.9rem;color:var(--ink);
+  transition:background 0.12s;
+}
+.fsr-row:hover{background:var(--aged)}
+.fsr-row:last-child{border-bottom:none}
+.fsr-add{margin-left:auto;background:var(--ink);color:var(--cream);border:none;border-radius:2px;padding:0.2rem 0.55rem;font-family:'Patrick Hand',cursive;font-size:0.78rem;cursor:pointer}
+.fsr-added{margin-left:auto;color:var(--muted);font-family:'Patrick Hand',cursive;font-size:0.78rem}
+
+/* friends page list */
+.friends-empty{
+  text-align:center;padding:3rem 1rem;
+  font-family:'Patrick Hand',cursive;font-size:1rem;color:var(--muted);
+}
+.friends-empty .empty-icon{display:block;font-size:2.5rem;margin-bottom:0.75rem}
+.friend-card{
+  background:var(--paper);border:1px solid var(--tape);border-radius:3px;
+  padding:0.85rem 1rem;margin-bottom:0.75rem;
+  display:flex;align-items:center;gap:0.75rem;
+  box-shadow:2px 2px 0 rgba(224,201,154,0.5);
+  position:relative;
+}
+.friend-card-av{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--tape);display:flex;align-items:center;justify-content:center;
+  font-family:'Caveat',cursive;font-size:1.2rem;color:var(--ink);
+}
+.friend-card-name{font-family:'Caveat',cursive;font-size:1.1rem;color:var(--ink);flex:1}
+.friend-card-remove{
+  background:none;border:1.5px solid var(--tape);
+  padding:0.2rem 0.5rem;font-size:0.75rem;cursor:pointer;
+  border-radius:2px;color:var(--muted);font-family:'Patrick Hand',cursive;
+  transition:all 0.15s;
+}
+.friend-card-remove:hover{background:rgba(231,76,60,0.08);border-color:#e74c3c;color:#e74c3c}
+
+/* add-friend button on diary cards */
+.dc-addfriend{
+  background:none;border:1.5px solid var(--tape);
+  padding:0.18rem 0.5rem;font-size:0.72rem;cursor:pointer;
+  border-radius:2px;color:var(--faded);font-family:'Patrick Hand',cursive;
+  transition:all 0.15s;margin-left:0.3rem;
+}
+.dc-addfriend:hover{background:var(--aged);color:var(--ink)}
+.dc-addfriend.is-friend{color:var(--muted);cursor:default;border-color:transparent}
+
 </style>
 </head>
 <body>
@@ -564,6 +632,7 @@ input[type=file]{display:none}
     <div class="nav-logo" onclick="goPage('feed')">✦ Petals &amp; Pages <span>🌸</span></div>
     <button class="nav-link active" id="nl-feed" onclick="goPage('feed')">feed</button>
     <button class="nav-link" id="nl-explore" onclick="goPage('explore')">explore</button>
+    <button class="nav-link" id="nl-friends" onclick="goPage('friends')">friends</button>
     <button class="nav-link" id="nl-write" onclick="goPage('write')">+ write</button>
     <div class="nav-avatar" id="navAv" onclick="goPage('profile')"></div>
   </nav>
@@ -580,7 +649,7 @@ input[type=file]{display:none}
         <div class="pm-stats">
           <div class="pm-stat"><strong id="pmEntries">0</strong>entries</div>
           <div class="pm-stat"><strong id="pmHearts">0</strong>hearts</div>
-          <div class="pm-stat"><strong>12</strong>friends</div>
+          <div class="pm-stat"><strong id="pmFriends">0</strong>friends</div>
         </div>
       </div>
 
@@ -646,7 +715,20 @@ input[type=file]{display:none}
       <!-- EXPLORE -->
       <div class="page" id="pageExplore">
         <div class="page-header">✦ explore diaries</div>
+        <div class="search-bar-wrap">
+          <input class="search-bar" id="searchBar" placeholder="🔍 search by username…" oninput="handleSearch(this.value)" />
+        </div>
         <div class="explore-grid" id="exploreGrid"></div>
+      </div>
+
+      <!-- FRIENDS -->
+      <div class="page" id="pageFriends">
+        <div class="page-header">✦ my friends</div>
+        <div class="search-bar-wrap">
+          <input class="search-bar" id="friendSearchBar" placeholder="🔍 add a friend by username…" oninput="handleFriendSearch(this.value)" />
+          <div id="friendSearchResults"></div>
+        </div>
+        <div id="friendsPageList"></div>
       </div>
 
       <!-- PROFILE -->
@@ -663,7 +745,7 @@ input[type=file]{display:none}
             <div class="ph-stats">
               <div class="ph-stat"><strong id="phEntries">0</strong><span>entries</span></div>
               <div class="ph-stat"><strong id="phHearts">0</strong><span>hearts</span></div>
-              <div class="ph-stat"><strong>12</strong><span>friends</span></div>
+              <div class="ph-stat"><strong id="phFriends">0</strong><span>friends</span></div>
             </div>
           </div>
         </div>
@@ -683,27 +765,9 @@ input[type=file]{display:none}
       <div class="s-card">
         <div class="s-title">💌 friends online</div>
         <div id="friendsList">
-          <div class="friend-row">
-            <div class="cm-avatar" style="background:var(--pink-sticky);width:28px;height:28px">M</div>
-            <span style="font-family:'Patrick Hand',cursive;font-size:0.83rem;color:var(--ink)">maya</span>
-            <span class="friend-dot dot-on"></span>
-          </div>
-          <div class="friend-row" style="margin-top:0.35rem">
-            <div class="cm-avatar" style="background:var(--blue-sticky);width:28px;height:28px">J</div>
-            <span style="font-family:'Patrick Hand',cursive;font-size:0.83rem;color:var(--ink)">juno</span>
-            <span class="friend-dot dot-on"></span>
-          </div>
-          <div class="friend-row" style="margin-top:0.35rem">
-            <div class="cm-avatar" style="background:var(--yellow-sticky);width:28px;height:28px">S</div>
-            <span style="font-family:'Patrick Hand',cursive;font-size:0.83rem;color:var(--ink)">sol</span>
-            <span class="friend-dot dot-off"></span>
-          </div>
-          <div class="friend-row" style="margin-top:0.35rem">
-            <div class="cm-avatar" style="background:var(--green-sticky);width:28px;height:28px">R</div>
-            <span style="font-family:'Patrick Hand',cursive;font-size:0.83rem;color:var(--ink)">river</span>
-            <span class="friend-dot dot-off"></span>
-          </div>
+          <div style="font-family:'Patrick Hand',cursive;font-size:0.82rem;color:var(--muted)">no friends yet — add some!</div>
         </div>
+        <button class="cf-btn" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="goPage('friends')">+ find friends</button>
       </div>
 
       <div class="s-card">
@@ -750,6 +814,7 @@ const PROMPTS = [
 let S = {
   user: null,
   entries: [],
+  friends: [],        // array of usernames
   moodFilter: null,
   composerMood: null,
   composerPhotos: [],
@@ -758,53 +823,7 @@ let S = {
   playingId: null,
 };
 
-const DEMO_ENTRIES = [
-  {
-    id:'d1',author:'maya',avatar:'M',color:'#ffd1dc',mood:'✨',
-    title:'first day of spring',
-    body:'walked to the park today and everything was blooming. found a tiny blue flower near the old oak tree and pressed it between my notebook pages. the air smelled like rain and possibility.',
-    date:daysAgo(2),music:'Weightless – Marconi Union',photos:[],
-    reactions:{'❤️':8,'🔥':2},
-    comments:[
-      {author:'juno',avatar:'J',color:'#d4f1f9',text:'this is so beautiful!! 🌸'},
-      {author:'sol',avatar:'S',color:'#fffacd',text:'the image in my head is so vivid'}
-    ],private:false,
-  },
-  {
-    id:'d2',author:'juno',avatar:'J',color:'#d4f1f9',mood:'😌',
-    title:'sunday pancakes & overthinking',
-    body:'made blueberry pancakes again. spilled syrup on my journal (the good one) and spent 20 minutes trying to clean it. decided the stain gives it character. life lesson: everything can have character if you decide it does.',
-    date:daysAgo(4),music:'Sunday Morning – Maroon 5',photos:[],
-    reactions:{'😂':12,'❤️':6,'😮':1},
-    comments:[{author:'maya',avatar:'M',color:'#ffd1dc',text:'iconic life philosophy ngl'}],
-    private:false,
-  },
-  {
-    id:'d3',author:'sol',avatar:'S',color:'#fffacd',mood:'🌙',
-    title:'3am thoughts',
-    body:"can't sleep again. the streetlight makes shadows like watercolour on the ceiling and i keep thinking about conversations i had years ago. some days feel like they belong to someone else's story.",
-    date:daysAgo(7),music:'Clair de Lune – Debussy',photos:[],
-    reactions:{'❤️':15,'😢':4,'🙌':3},
-    comments:[
-      {author:'luna',avatar:'L',color:'#e8d5f5',text:'3am brain is the most honest brain'},
-      {author:'maya',avatar:'M',color:'#ffd1dc',text:'take care of yourself 💕'},
-      {author:'juno',avatar:'J',color:'#d4f1f9',text:'you write so beautifully'}
-    ],
-    private:false,
-  },
-  {
-    id:'d4',author:'river',avatar:'R',color:'#d4f7e0',mood:'🎉',
-    title:'got the job!!!',
-    body:'i literally cried in the car for ten minutes after the call. three months of applications and rejections and today they said yes. buying myself flowers on the way home. sometimes it just works out.',
-    date:daysAgo(10),music:'Good as Hell – Lizzo',photos:[],
-    reactions:{'🙌':22,'❤️':18,'🔥':9},
-    comments:[
-      {author:'sol',avatar:'S',color:'#fffacd',text:'YESSS i knew you would!! 🎉'},
-      {author:'juno',avatar:'J',color:'#d4f1f9',text:'the flowers are the perfect touch'}
-    ],
-    private:false,
-  },
-];
+const DEMO_ENTRIES = [];
 
 function daysAgo(n){
   const d = new Date(Date.now()-n*86400000);
@@ -840,6 +859,7 @@ function doAuth(){
     color: saved.color || PALETTES[Math.floor(Math.random()*PALETTES.length)],
   };
   S.entries = [...DEMO_ENTRIES, ...(saved.entries||[])];
+  S.friends = saved.friends || [];
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('visible');
   initApp();
@@ -869,7 +889,7 @@ function setCompDate(){
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
-const PAGES = ['feed','explore','write','profile'];
+const PAGES = ['feed','explore','write','profile','friends'];
 function goPage(p){
   PAGES.forEach(x=>{
     document.getElementById('page'+cap(x)).classList.remove('active');
@@ -881,6 +901,7 @@ function goPage(p){
   if(nl) nl.classList.add('active');
   if(p==='profile'){ renderProfile(); }
   if(p==='explore'){ renderExplore(); }
+  if(p==='friends'){ renderFriendsPage(); }
 }
 function cap(s){ return s[0].toUpperCase()+s.slice(1); }
 
@@ -897,6 +918,7 @@ function updateSidebars(){
   const hearts = mine.reduce((a,e)=>a+Object.values(e.reactions||{}).reduce((s,v)=>s+v,0),0);
   document.getElementById('pmEntries').textContent = mine.length;
   document.getElementById('pmHearts').textContent = hearts;
+  document.getElementById('pmFriends').textContent = S.friends.length;
   // jar
   const jar = document.getElementById('memoryJar');
   jar.innerHTML = mine.length
@@ -916,6 +938,18 @@ function updateSidebars(){
   document.getElementById('phBio').value = u.bio || '';
   document.getElementById('phEntries').textContent = mine.length;
   document.getElementById('phHearts').textContent = hearts;
+  document.getElementById('phFriends').textContent = S.friends.length;
+  // friends sidebar
+  const fl = document.getElementById('friendsList');
+  if(S.friends.length){
+    fl.innerHTML = S.friends.map(f=>`
+      <div class="friend-row" style="margin-top:0.3rem">
+        <div class="cm-avatar" style="background:${stringColor(f)};width:28px;height:28px">${f[0].toUpperCase()}</div>
+        <span style="font-family:'Patrick Hand',cursive;font-size:0.83rem;color:var(--ink)">${esc(f)}</span>
+      </div>`).join('');
+  } else {
+    fl.innerHTML = `<div style="font-family:'Patrick Hand',cursive;font-size:0.82rem;color:var(--muted)">no friends yet — add some!</div>`;
+  }
   // nav avatar
   setAvatarEl('navAv', u);
   document.getElementById('navAv').innerHTML = u.avatar
@@ -981,6 +1015,10 @@ function cardHTML(e){
   const avHTML = S.user.avatar && isMe
     ? `<img src="${S.user.avatar}" alt="av">`
     : (S.user.avatar&&!isMe?'':(e.avatar||e.author[0].toUpperCase()));
+  const isFriend = S.friends.includes(e.author);
+  const addFriendBtn = !isMe
+    ? `<button class="dc-addfriend${isFriend?' is-friend':''}" id="af-${e.id}" onclick="toggleFriendFromCard('${e.id}','${esc(e.author)}')">${isFriend ? '✓ friends' : '+ friend'}</button>`
+    : '';
   return `
 <div class="diary-card anim-in" id="card-${e.id}">
   <div class="dc-tape1"></div><div class="dc-tape2"></div>
@@ -988,7 +1026,7 @@ function cardHTML(e){
   <div class="dc-header">
     <div class="dc-avatar" style="background:${e.color||PALETTES[0]}">${isMe&&S.user.avatar?`<img src="${S.user.avatar}" alt="av">`:e.avatar||e.author[0].toUpperCase()}</div>
     <div class="dc-meta">
-      <div class="dc-author">${esc(e.author)} <span class="dc-mood">${e.mood||''}</span></div>
+      <div class="dc-author">${esc(e.author)} <span class="dc-mood">${e.mood||''}</span>${addFriendBtn}</div>
       <div class="dc-date">${e.date}</div>
     </div>
     ${delBtn}
@@ -1200,22 +1238,7 @@ function renderProfile(){
 // EXPLORE
 // ══════════════════════════════════════════════
 function renderExplore(){
-  const visible = S.entries.filter(e=>!e.private).sort(()=>Math.random()-0.5);
-  document.getElementById('exploreGrid').innerHTML = visible.length
-    ? visible.map(e=>`
-      <div class="ex-card" onclick="goPage('feed')">
-        <div class="ex-tape"></div>
-        <div class="ex-author">${e.mood||''} ${esc(e.author)} · ${e.date}</div>
-        <div class="ex-title">${esc(e.title||'untitled')}</div>
-        <div class="ex-excerpt">${esc(e.body||'')}</div>
-        <div class="ex-footer">
-          <span>${Object.values(e.reactions||{}).reduce((a,v)=>a+v,0)} reactions</span>
-          <span>·</span>
-          <span>${(e.comments||[]).length} notes</span>
-          ${e.music?`<span>· 🎵 ${esc(e.music)}</span>`:''}
-        </div>
-      </div>`).join('')
-    : `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📚</span>no public entries yet</div>`;
+  handleSearch('');
 }
 
 // ══════════════════════════════════════════════
@@ -1251,11 +1274,118 @@ function saveStorage(){
       bio: S.user.bio,
       avatar: S.user.avatar,
       color: S.user.color,
+      friends: S.friends,
     }));
   }catch(e){}
 }
-function loadStorage(){
-  try{ return JSON.parse(localStorage.getItem('pp_v2')||'{}'); }catch(e){ return {}; }
+
+// ══════════════════════════════════════════════
+// FRIENDS
+// ══════════════════════════════════════════════
+function addFriend(username){
+  if(!username || username === S.user.name) return;
+  if(!S.friends.includes(username)){
+    S.friends.push(username);
+    saveStorage(); updateSidebars(); renderFriendsPage();
+    toast(`added ${username} as a friend 💌`);
+  }
+}
+
+function removeFriend(username){
+  S.friends = S.friends.filter(f=>f!==username);
+  saveStorage(); updateSidebars(); renderFriendsPage();
+  toast(`removed ${username} from friends`);
+}
+
+function toggleFriendFromCard(entryId, username){
+  const btn = document.getElementById('af-'+entryId);
+  if(S.friends.includes(username)){
+    removeFriend(username);
+    if(btn){ btn.textContent='+ friend'; btn.classList.remove('is-friend'); }
+  } else {
+    addFriend(username);
+    if(btn){ btn.textContent='✓ friends'; btn.classList.add('is-friend'); }
+  }
+}
+
+function renderFriendsPage(){
+  const el = document.getElementById('friendsPageList');
+  if(!el) return;
+  if(!S.friends.length){
+    el.innerHTML = `<div class="friends-empty"><span class="empty-icon">💌</span>no friends yet<br><small>search by username above to add someone</small></div>`;
+    return;
+  }
+  el.innerHTML = S.friends.map(f=>`
+    <div class="friend-card">
+      <div class="friend-card-av" style="background:${stringColor(f)}">${f[0].toUpperCase()}</div>
+      <div class="friend-card-name">${esc(f)}</div>
+      <button class="friend-card-remove" onclick="removeFriend('${esc(f)}')">remove</button>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════
+function handleSearch(query){
+  const q = query.trim().toLowerCase();
+  const visible = S.entries.filter(e=> !e.private || e.author===S.user.name);
+  const filtered = q ? visible.filter(e=> e.author.toLowerCase().includes(q)) : visible.sort(()=>Math.random()-0.5);
+  const el = document.getElementById('exploreGrid');
+  el.innerHTML = filtered.length
+    ? filtered.map(e=>`
+      <div class="ex-card" onclick="goPage('feed')">
+        <div class="ex-tape"></div>
+        <div class="ex-author">${e.mood||''} ${esc(e.author)} · ${e.date}</div>
+        <div class="ex-title">${esc(e.title||'untitled')}</div>
+        <div class="ex-excerpt">${esc(e.body||'')}</div>
+        <div class="ex-footer">
+          <span>${Object.values(e.reactions||{}).reduce((a,v)=>a+v,0)} reactions</span>
+          <span>·</span>
+          <span>${(e.comments||[]).length} notes</span>
+          ${e.music?`<span>· 🎵 ${esc(e.music)}</span>`:''}
+        </div>
+      </div>`).join('')
+    : `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🔍</span>no results for "${esc(q)}"</div>`;
+}
+
+function handleFriendSearch(query){
+  const q = query.trim().toLowerCase();
+  const resultsEl = document.getElementById('friendSearchResults');
+  if(!q){ resultsEl.innerHTML=''; return; }
+  // Find authors from entries whose name matches
+  const authors = [...new Set(S.entries.map(e=>e.author))]
+    .filter(a=> a !== S.user.name && a.toLowerCase().includes(q));
+  if(!authors.length){ resultsEl.innerHTML=`<div class="fsr-row" style="color:var(--muted)">no users found</div>`; return; }
+  resultsEl.innerHTML = authors.map(a=>{
+    const isFriend = S.friends.includes(a);
+    return `<div class="fsr-row">
+      <div class="cm-avatar" style="background:${stringColor(a)};width:28px;height:28px;flex-shrink:0">${a[0].toUpperCase()}</div>
+      <span>${esc(a)}</span>
+      ${isFriend
+        ? `<span class="fsr-added">✓ friends</span>`
+        : `<button class="fsr-add" onclick="addFriendFromSearch('${esc(a)}')">+ add</button>`}
+    </div>`;
+  }).join('');
+}
+
+function addFriendFromSearch(username){
+  addFriend(username);
+  document.getElementById('friendSearchBar').value='';
+  document.getElementById('friendSearchResults').innerHTML='';
+}
+
+// close friend search dropdown on outside click
+document.addEventListener('click', e=>{
+  const wrap = document.querySelector('.search-bar-wrap');
+  const results = document.getElementById('friendSearchResults');
+  if(results && wrap && !wrap.contains(e.target)) results.innerHTML='';
+});
+
+function stringColor(str){
+  const colors = ['#ffd1dc','#d4f1f9','#fffacd','#d4f7e0','#e8d5f5','#fde2c8'];
+  let hash = 0;
+  for(let i=0;i<str.length;i++) hash = str.charCodeAt(i)+((hash<<5)-hash);
+  return colors[Math.abs(hash) % colors.length];
 }
 </script>
 </body>
