@@ -1388,5 +1388,20 @@ function stringColor(str){
   return colors[Math.abs(hash) % colors.length];
 }
 </script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDqNSVKljjqKMLHrwM9uwfGsi7T-CPhq4g",
+    authDomain: "petals-and-pages.firebaseapp.com",
+    projectId: "petals-and-pages",
+    storageBucket: "petals-and-pages.firebasestorage.app",
+    messagingSenderId: "314800307471",
+    appId: "1:314800307471:web:7e1e4c2ed9240e983e527a"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
 </body>
 </html>
